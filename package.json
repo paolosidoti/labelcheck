@@ -1,0 +1,21 @@
+{
+  "name": "labelcheck-ceviq",
+  "version": "1.0.0",
+  "description": "App di ispezione etichette vino per ispettori CEVIQ",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "notes": {
+    "struttura": "index.html va nella cartella public/",
+    "configurazione": "Impostare ANTHROPIC_API_KEY come variabile d'ambiente",
+    "knowledge_base": "Modificare prompt.txt per aggiornare le regole di validazione"
+  }
+}
