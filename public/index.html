@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LabelCheck — CEVIQ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1a2744;
+    --navy-light: #243360;
+    --green-ok: #2d7a4f;
+    --red: #c0392b;
+    --red-bg: #fdf2f2;
+    --red-border: #f5c6c2;
+    --orange: #d4600a;
+    --orange-bg: #fef6ee;
+    --orange-border: #fad5b0;
+    --blue: #1a5fa8;
+    --blue-bg: #eef4fc;
+    --blue-border: #b8d4f0;
+    --gray-bg: #f5f5f3;
+    --gray-border: #dddbd6;
+    --gray-text: #6b6b68;
+    --text: #1a1a18;
+    --white: #ffffff;
+    --radius: 10px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--gray-bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* HEADER */
+  .header {
+    width: 100%;
+    background: var(--navy);
+    color: var(--white);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--white);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-icon svg { width: 20px; height: 20px; }
+
+  .header-title { font-size: 17px; font-weight: 600; letter-spacing: 0.01em; }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+
+  /* MAIN CONTENT */
+  .main {
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 16px 40px;
+    flex: 1;
+  }
+
+  /* SCREEN */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* UPLOAD SCREEN */
+  .screen-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .screen-sub { font-size: 14px; color: var(--gray-text); line-height: 1.5; margin-bottom: 24px; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-text);
+    margin-bottom: 10px;
+  }
+
+  .photo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .photo-slot {
+    aspect-ratio: 3/4;
+    border: 2px dashed var(--gray-border);
+    border-radius: var(--radius);
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+    gap: 8px;
+  }
+
+  .photo-slot:hover { border-color: var(--navy); }
+  .photo-slot.has-image { border: 2px solid var(--green-ok); }
+
+  .photo-slot input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .photo-slot svg { width: 28px; height: 28px; color: var(--gray-text); }
+  .photo-slot.has-image svg { display: none; }
+
+  .photo-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .photo-hint {
+    font-size: 11px;
+    color: var(--gray-text);
+  }
+
+  .photo-slot.has-image .photo-label,
+  .photo-slot.has-image .photo-hint { display: none; }
+
+  .photo-preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+
+  .photo-slot.has-image .photo-preview { display: block; }
+
+  .photo-acquired {
+    display: none;
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    text-align: center;
+  }
+
+  .photo-slot.has-image .photo-acquired { display: block; }
+
+  .acquired-badge {
+    background: var(--green-ok);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+
+  .photo-retake {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    padding: 8px;
+  }
+
+  .photo-slot.has-image .photo-retake { display: block; }
+
+  /* SELECT */
+  .select-wrap {
+    position: relative;
+    margin-bottom: 28px;
+  }
+
+  .select-wrap select {
+    width: 100%;
+    padding: 14px 40px 14px 14px;
+    border: 1.5px solid var(--gray-border);
+    border-radius: var(--radius);
+    background: var(--white);
+    font-size: 15px;
+    color: var(--text);
+    appearance: none;
+    cursor: pointer;
+    font-family: var(--font);
+  }
+
+  .select-wrap select:focus {
+    outline: none;
+    border-color: var(--navy);
+  }
+
+  .select-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--gray-text);
+  }
+
+  /* API KEY */
+  .apikey-wrap { margin-bottom: 20px; }
+
+  .apikey-wrap input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--gray-border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--white);
+  }
+
+  .apikey-wrap input:focus {
+    outline: none;
+    border-color: var(--navy);
+  }
+
+  .apikey-note {
+    font-size: 11px;
+    color: var(--gray-text);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+
+  /* BUTTON */
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    font-family: var(--font);
+  }
+
+  .btn-primary:hover:not(:disabled) { background: var(--navy-light); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-hint {
+    font-size: 12px;
+    color: var(--gray-text);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* LOADING */
+  #screen-loading {
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--gray-border);
+    border-top-color: var(--navy);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .loading-sub { font-size: 14px; color: var(--gray-text); }
+
+  /* REPORT SCREEN */
+  .report-header {
+    background: var(--navy);
+    color: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .report-meta { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+  .report-date { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+  .report-cat { font-size: 13px; color: rgba(255,255,255,0.75); margin-bottom: 12px; }
+
+  .report-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-nonconforme { background: var(--red); color: white; }
+  .badge-conforme { background: var(--green-ok); color: white; }
+  .badge-parziale { background: var(--orange); color: white; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .summary-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 12px 8px;
+    text-align: center;
+    border: 1.5px solid var(--gray-border);
+  }
+
+  .summary-card.critical { border-color: var(--red-border); background: var(--red-bg); }
+  .summary-card.warning { border-color: var(--orange-border); background: var(--orange-bg); }
+  .summary-card.info { border-color: var(--blue-border); background: var(--blue-bg); }
+
+  .summary-count {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .summary-card.critical .summary-count { color: var(--red); }
+  .summary-card.warning .summary-count { color: var(--orange); }
+  .summary-card.info .summary-count { color: var(--blue); }
+
+  .summary-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-text); }
+
+  /* SEVERITY SECTIONS */
+  .severity-section { margin-bottom: 20px; }
+
+  .severity-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .severity-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .severity-title.critical { color: var(--red); }
+  .severity-title.warning { color: var(--orange); }
+  .severity-title.info { color: var(--blue); }
+
+  .severity-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: white;
+  }
+
+  .severity-icon.critical { background: var(--red); }
+  .severity-icon.warning { background: var(--orange); }
+  .severity-icon.info { background: var(--blue); }
+
+  .severity-action {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-text);
+  }
+
+  /* FINDING CARD */
+  .finding-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 8px;
+    border-left: 3px solid transparent;
+  }
+
+  .finding-card.critical { border-left-color: var(--red); }
+  .finding-card.warning { border-left-color: var(--orange); }
+  .finding-card.info { border-left-color: var(--blue); }
+
+  .finding-field { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+  .finding-desc { font-size: 13px; color: var(--gray-text); line-height: 1.5; margin-bottom: 8px; }
+
+  .finding-action {
+    font-size: 12px;
+    color: var(--navy);
+    font-style: italic;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .finding-refs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .finding-ref {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--navy);
+    background: var(--blue-bg);
+    border: 1px solid var(--blue-border);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  /* EMPTY STATE */
+  .empty-section {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    color: var(--gray-text);
+    font-size: 13px;
+    border: 1.5px dashed var(--gray-border);
+  }
+
+  /* ACTION BAR */
+  .action-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn-secondary {
+    padding: 14px;
+    background: var(--white);
+    color: var(--navy);
+    border: 1.5px solid var(--navy);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background 0.2s;
+  }
+
+  .btn-secondary:hover { background: var(--gray-bg); }
+
+  /* ERROR */
+  .error-box {
+    background: var(--red-bg);
+    border: 1.5px solid var(--red-border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 13px;
+    color: var(--red);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#1a2744" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+  <div>
+    <div class="header-title">LabelCheck</div>
+    <div class="header-sub">CEVIQ · Ispezione Etichette</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SCREEN 1: UPLOAD -->
+  <div class="screen active" id="screen-upload">
+    <h1 class="screen-title">Nuova ispezione</h1>
+    <p class="screen-sub">Acquisisci le immagini dell'etichetta e seleziona la categoria del vino per avviare la verifica di conformità.</p>
+
+    <div class="section-label">Immagini etichetta</div>
+    <div class="photo-grid">
+      <div class="photo-slot" id="slot-front">
+        <input type="file" accept="image/*" capture="environment" id="input-front" onchange="handlePhoto(this, 'front')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <span class="photo-label">Fronte</span>
+        <span class="photo-hint">Tocca per acquisire</span>
+        <img class="photo-preview" id="preview-front" src="" alt="Fronte etichetta">
+        <div class="photo-acquired"><span class="acquired-badge">✓ Acquisita</span></div>
+        <div class="photo-retake">Tocca per rifare</div>
+      </div>
+
+      <div class="photo-slot" id="slot-back">
+        <input type="file" accept="image/*" capture="environment" id="input-back" onchange="handlePhoto(this, 'back')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <span class="photo-label">Retro / Collarino</span>
+        <span class="photo-hint">Tocca per acquisire</span>
+        <img class="photo-preview" id="preview-back" src="" alt="Retro etichetta">
+        <div class="photo-acquired"><span class="acquired-badge">✓ Acquisita</span></div>
+        <div class="photo-retake">Tocca per rifare</div>
+      </div>
+    </div>
+
+    <div class="section-label">Categoria del vino</div>
+    <div class="select-wrap">
+      <select id="wine-category" onchange="updateButton()">
+        <option value="">Seleziona categoria...</option>
+        <option value="DOC">DOC</option>
+        <option value="DOCG">DOCG</option>
+        <option value="IGT">IGT</option>
+        <option value="Vino da tavola">Vino da tavola</option>
+        <option value="Spumante">Spumante</option>
+        <option value="Vino spumante DOC">Vino spumante DOC</option>
+        <option value="Vino spumante DOCG">Vino spumante DOCG</option>
+      </select>
+      <div class="select-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btn-analyze" disabled onclick="startAnalysis()">Analizza etichetta</button>
+    <div class="btn-hint" id="btn-hint">Acquisisci entrambe le immagini e seleziona la categoria.</div>
+  </div>
+
+  <!-- SCREEN 2: LOADING -->
+  <div class="screen" id="screen-loading">
+    <div class="spinner"></div>
+    <div class="loading-title">Analisi in corso…</div>
+    <div class="loading-sub">Claude sta verificando la conformità dell'etichetta alle normative vigenti.</div>
+  </div>
+
+  <!-- SCREEN 3: REPORT -->
+  <div class="screen" id="screen-report">
+    <div id="report-content"></div>
+    <div class="action-bar">
+      <button class="btn-secondary" onclick="newInspection()">Nuova ispezione</button>
+      <button class="btn-primary" onclick="exportReport()">Esporta report</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let photoData = { front: null, back: null };
+let currentReport = null;
+
+function handlePhoto(input, side) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    photoData[side] = dataUrl;
+    const slot = document.getElementById('slot-' + side);
+    const preview = document.getElementById('preview-' + side);
+    preview.src = dataUrl;
+    slot.classList.add('has-image');
+    updateButton();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateButton() {
+  const btn = document.getElementById('btn-analyze');
+  const hint = document.getElementById('btn-hint');
+  const cat = document.getElementById('wine-category').value;
+  const key = document.getElementById('api-key').value.trim();
+  const hasFront = !!photoData.front;
+  const hasBack = !!photoData.back;
+
+  const ready = hasFront && hasBack && cat;
+  btn.disabled = !ready;
+
+  if (!hasFront || !hasBack) {
+    hint.textContent = 'Acquisisci entrambe le immagini per procedere.';
+  } else if (!cat) {
+    hint.textContent = 'Seleziona la categoria del vino.';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function startAnalysis() {
+  const category = document.getElementById('wine-category').value;
+  showScreen('screen-loading');
+
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category: category,
+        images: [
+          {
+            mediaType: photoData.front.split(';')[0].split(':')[1],
+            data: photoData.front.split(',')[1]
+          },
+          {
+            mediaType: photoData.back.split(';')[0].split(':')[1],
+            data: photoData.back.split(',')[1]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'Errore API');
+    }
+
+    currentReport = await response.json();
+    if (currentReport.error) throw new Error(currentReport.error);
+    currentReport.category = category;
+    currentReport.date = new Date();
+    renderReport(currentReport);
+    showScreen('screen-report');
+
+  } catch (err) {
+    showScreen('screen-upload');
+    const existing = document.querySelector('.error-box');
+    if (existing) existing.remove();
+    const box = document.createElement('div');
+    box.className = 'error-box';
+    box.textContent = 'Errore durante l\'analisi: ' + err.message;
+    document.getElementById('screen-upload').prepend(box);
+  }
+}
+
+function renderReport(report) {
+  const now = report.date;
+  const dateStr = now.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+  const badgeClass = report.esito === 'Conforme' ? 'badge-conforme' :
+                     report.esito === 'Parzialmente conforme' ? 'badge-parziale' : 'badge-nonconforme';
+
+  let html = `
+    <div class="report-header">
+      <div class="report-meta">RAPPORTO DI ISPEZIONE</div>
+      <div class="report-date">${dateStr}</div>
+      <div class="report-cat">ore ${timeStr} · Categoria: ${report.category}</div>
+      <span class="report-badge ${badgeClass}">${report.esito}</span>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card critical">
+        <div class="summary-count">${report.critici.length}</div>
+        <div class="summary-label">Critici</div>
+      </div>
+      <div class="summary-card warning">
+        <div class="summary-count">${report.avvisi.length}</div>
+        <div class="summary-label">Avvisi</div>
+      </div>
+      <div class="summary-card info">
+        <div class="summary-count">${report.info.length}</div>
+        <div class="summary-label">Da verificare</div>
+      </div>
+    </div>
+  `;
+
+  html += renderSection('critical', '!', 'CRITICO', 'Blocca la conformità', report.critici);
+  html += renderSection('warning', '▲', 'AVVISO', 'Correggibile', report.avvisi);
+  html += renderSection('info', 'i', 'DA VERIFICARE', 'Con disciplinare', report.info);
+
+  document.getElementById('report-content').innerHTML = html;
+}
+
+function renderSection(type, icon, label, action, items) {
+  let html = `
+    <div class="severity-section">
+      <div class="severity-header">
+        <div class="severity-title ${type}">
+          <div class="severity-icon ${type}">${icon}</div>
+          ${label}
+        </div>
+        <div class="severity-action">${action}</div>
+      </div>
+  `;
+
+  if (items.length === 0) {
+    html += `<div class="empty-section">Nessuna segnalazione</div>`;
+  } else {
+    items.forEach(item => {
+      const refs = (item.riferimenti || []).map(r => `<span class="finding-ref">${r}</span>`).join('');
+      const azione = item.azione ? `<div class="finding-action">→ ${item.azione}</div>` : '';
+      html += `
+        <div class="finding-card ${type}">
+          <div class="finding-field">${item.campo}</div>
+          <div class="finding-desc">${item.problema}</div>
+          ${azione}
+          <div class="finding-refs">${refs}</div>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function newInspection() {
+  photoData = { front: null, back: null };
+  currentReport = null;
+  document.getElementById('slot-front').classList.remove('has-image');
+  document.getElementById('slot-back').classList.remove('has-image');
+  document.getElementById('preview-front').src = '';
+  document.getElementById('preview-back').src = '';
+  document.getElementById('wine-category').value = '';
+  document.getElementById('btn-analyze').disabled = true;
+  document.getElementById('btn-hint').textContent = 'Acquisisci entrambe le immagini e seleziona la categoria.';
+  const err = document.querySelector('.error-box');
+  if (err) err.remove();
+  showScreen('screen-upload');
+}
+
+function exportReport() {
+  if (!currentReport) return;
+  const lines = [];
+  lines.push('LABELCHECK — CEVIQ');
+  lines.push('Rapporto di ispezione');
+  lines.push('');
+  lines.push('Data: ' + currentReport.date.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }));
+  lines.push('Ora: ' + currentReport.date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }));
+  lines.push('Categoria: ' + currentReport.category);
+  lines.push('Esito: ' + currentReport.esito);
+  lines.push('');
+  lines.push('--- CRITICI (' + currentReport.critici.length + ') ---');
+  currentReport.critici.forEach(i => {
+    lines.push('• ' + i.campo + ': ' + i.problema);
+    if (i.azione) lines.push('  Azione: ' + i.azione);
+    lines.push('  Riferimenti: ' + (i.riferimenti || []).join(', '));
+  });
+  lines.push('');
+  lines.push('--- AVVISI (' + currentReport.avvisi.length + ') ---');
+  currentReport.avvisi.forEach(i => {
+    lines.push('• ' + i.campo + ': ' + i.problema);
+    if (i.azione) lines.push('  Azione: ' + i.azione);
+    lines.push('  Riferimenti: ' + (i.riferimenti || []).join(', '));
+  });
+  lines.push('');
+  lines.push('--- DA VERIFICARE (' + currentReport.info.length + ') ---');
+  currentReport.info.forEach(i => {
+    lines.push('• ' + i.campo + ': ' + i.problema);
+    if (i.azione) lines.push('  Azione: ' + i.azione);
+    lines.push('  Riferimenti: ' + (i.riferimenti || []).join(', '));
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'labelcheck-report-' + Date.now() + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
