@@ -55,9 +55,9 @@ app.post('/api/analyze', async (req, res) => {
 
   // Inserisce la categoria selezionata dall'ispettore nel prompt
   const { category, images } = req.body;
-  if (!category || !images || images.length < 2) {
+  if (!category || !images || images.length < 1) {
     return res.status(400).json({
-      error: 'Richiesta incompleta. Necessarie: categoria e almeno 2 immagini.'
+      error: 'Richiesta incompleta. Necessarie: categoria e almeno 1 immagine.'
     });
   }
 
@@ -73,9 +73,16 @@ app.post('/api/analyze', async (req, res) => {
     }
   }));
 
+  // Avvisa il modello se si tratta di etichetta singola (1 immagine)
+  // o fronte+retro (2 immagini), così non segnala come problema
+  // l'assenza di una seconda immagine quando non serve
+  const noteText = images.length === 1
+    ? 'È stata fornita una sola immagine: la bottiglia ha un\'etichetta singola. Analizza tutte le informazioni presenti in questa immagine, senza segnalare come problema l\'assenza di una seconda immagine.'
+    : 'Sono state fornite due immagini: fronte e retro/collarino dell\'etichetta.';
+
   imageContent.push({
     type: 'text',
-    text: 'Analizza queste immagini dell\'etichetta del vino e restituisci il report di conformità in formato JSON come specificato.'
+    text: noteText + ' Analizza le immagini dell\'etichetta del vino e restituisci il report di conformità in formato JSON come specificato.'
   });
 
   // Chiamata all'API Anthropic
