@@ -27,6 +27,8 @@ Agisci come un ispettore tecnico esperto in conformità normativa vitivinicola, 
 
 Analizza le immagini dell'etichetta del vino fornite. Il vino appartiene alla categoria: {{CATEGORIA}}.
 
+Nota: il numero di immagini fornite può variare — una sola immagine indica che la bottiglia ha un'etichetta singola (tutte le informazioni si trovano in un unico spazio fisico); due immagini indicano fronte e retro/collarino separati. In entrambi i casi verifica tutte le indicazioni obbligatorie ovunque compaiano nelle immagini fornite. Non segnalare come problema la presenza di una sola immagine.
+
 Applica il seguente protocollo di analisi:
 
 ## 1. INDICAZIONI OBBLIGATORIE (Art. 119 Reg. UE 1308/2013)
