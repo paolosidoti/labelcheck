@@ -535,7 +535,7 @@
           <circle cx="12" cy="13" r="4"/>
         </svg>
         <span class="photo-label">Retro / Collarino</span>
-        <span class="photo-hint">Tocca per acquisire</span>
+        <span class="photo-hint">Facoltativa per etichetta singola</span>
         <img class="photo-preview" id="preview-back" src="" alt="Retro etichetta">
         <div class="photo-acquired"><span class="acquired-badge">✓ Acquisita</span></div>
         <div class="photo-retake">Tocca per rifare</div>
@@ -562,7 +562,7 @@
     </div>
 
     <button class="btn-primary" id="btn-analyze" disabled onclick="startAnalysis()">Analizza etichetta</button>
-    <div class="btn-hint" id="btn-hint">Acquisisci entrambe le immagini e seleziona la categoria.</div>
+    <div class="btn-hint" id="btn-hint">Acquisisci almeno la foto del fronte e seleziona la categoria. Il retro è facoltativo per etichetta singola.</div>
   </div>
 
   <!-- SCREEN 2: LOADING -->
@@ -608,13 +608,12 @@ function updateButton() {
   const hint = document.getElementById('btn-hint');
   const cat = document.getElementById('wine-category').value;
   const hasFront = !!photoData.front;
-  const hasBack = !!photoData.back;
 
-  const ready = hasFront && hasBack && cat;
+  const ready = hasFront && cat;
   btn.disabled = !ready;
 
-  if (!hasFront || !hasBack) {
-    hint.textContent = 'Acquisisci entrambe le immagini per procedere.';
+  if (!hasFront) {
+    hint.textContent = 'Acquisisci almeno la foto del fronte per procedere.';
   } else if (!cat) {
     hint.textContent = 'Seleziona la categoria del vino.';
   } else {
@@ -637,16 +636,19 @@ async function startAnalysis() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         category: category,
-        images: [
-          {
+        images: (() => {
+          const imgs = [{
             mediaType: photoData.front.split(';')[0].split(':')[1],
             data: photoData.front.split(',')[1]
-          },
-          {
-            mediaType: photoData.back.split(';')[0].split(':')[1],
-            data: photoData.back.split(',')[1]
+          }];
+          if (photoData.back) {
+            imgs.push({
+              mediaType: photoData.back.split(';')[0].split(':')[1],
+              data: photoData.back.split(',')[1]
+            });
           }
-        ]
+          return imgs;
+        })()
       })
     });
 
